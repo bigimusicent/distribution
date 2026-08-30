@@ -1,0 +1,1941 @@
+// /js/player.js
+(function () {
+  if (window.__AUDIORY_PLAYER_V2__) return;
+  window.__AUDIORY_PLAYER_V2__ = true;
+
+  const audio = window.__AUDIORY_SHARED_AUDIO__ || new Audio();
+  window.__AUDIORY_SHARED_AUDIO__ = audio;
+  audio.preload = "metadata";
+
+  /* Homepage fix:
+     do NOT force crossOrigin here.
+     It can mute audio when using some hosted preview URLs. */
+
+  let queue = [];
+  let currentTrack = null;
+  let currentIndex = -1;
+  let shuffle = false;
+  let repeatMode = "off"; // off | all | one
+  let isSeeking = false;
+
+  let currentSkin = localStorage.getItem("audiory_player_skin") || "brown";
+  
+  const playedSession = {};
+  const downloadedSkins = ["brown", "graphite", "midnight", "sunset", "ocean"];
+
+  const PLAYER_STATE_KEY = "audiory_player_state_v1";
+
+  const IS_IOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  const IS_SAFARI =
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  const FX_SAFE_MODE = IS_IOS || IS_SAFARI;
+
+  function savePlayerState() {
+    try {
+      const state = {
+        queue,
+        currentTrack,
+        currentIndex,
+        shuffle,
+        repeatMode,
+        currentSkin,
+        currentTime: Number(audio.currentTime || 0),
+        paused: audio.paused
+      };
+      sessionStorage.setItem(PLAYER_STATE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn("[player] save state failed", e);
+    }
+  }
+
+  function loadPlayerState() {
+    try {
+      const raw = sessionStorage.getItem(PLAYER_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      console.warn("[player] load state failed", e);
+      return null;
+    }
+  }
+
+  function clearPlayerState() {
+    try {
+      sessionStorage.removeItem(PLAYER_STATE_KEY);
+    } catch {}
+  }
+
+  injectStyles();
+  renderPlayer();
+  cacheDom();
+  bindEvents();
+  applySkin(currentSkin);
+  renderSkinCards();
+  collectQueueFromPage();
+  updateUi();
+  restorePlayerFromSession();
+
+  function injectStyles() {
+    if (document.getElementById("audiory-player-styles-v2")) return;
+
+    const style = document.createElement("style");
+    style.id = "audiory-player-styles-v2";
+    style.textContent = `
+      :root{
+        --ap-bg:#8b5a3c;
+        --ap-bg-2:#6f452f;
+        --ap-text:#ffffff;
+        --ap-muted:rgba(255,255,255,.76);
+        --ap-line:rgba(255,255,255,.12);
+        --ap-chip:rgba(255,255,255,.08);
+        --ap-accent:#28d7ff;
+        --ap-shadow:0 18px 50px rgba(0,0,0,.34);
+      }
+
+      body{
+        padding-bottom:108px;
+      }
+
+      .audiory-player-root{
+        position:fixed;
+        left:0;
+        right:0;
+        bottom:0;
+        z-index:10040;
+        pointer-events:auto;
+      }
+
+      .ap-hidden{display:none!important}
+
+      .ap-mini{
+        pointer-events:auto;
+        width:min(920px, calc(100vw - 16px));
+        margin:0 auto 10px;
+        border-radius:22px;
+        border:1px solid var(--ap-line);
+        background:linear-gradient(180deg,var(--ap-bg) 0%, var(--ap-bg-2) 100%);
+        box-shadow:var(--ap-shadow);
+        overflow:hidden;
+        display:none;
+      }
+
+      .ap-mini.show{display:block}
+
+      .ap-mini-inner{
+        display:flex;
+        align-items:center;
+        gap:14px;
+        min-height:84px;
+        padding:12px 14px;
+      }
+
+      .ap-mini-main{
+        flex:1;
+        min-width:0;
+        display:flex;
+        align-items:center;
+        gap:12px;
+        cursor:pointer;
+      }
+
+      .ap-cover{
+        width:58px;
+        height:58px;
+        border-radius:16px;
+        overflow:hidden;
+        background:rgba(0,0,0,.16);
+        flex-shrink:0;
+      }
+
+      .ap-cover img{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        display:block;
+      }
+
+      .ap-meta{
+        min-width:0;
+        flex:1;
+      }
+
+      .ap-title{
+        color:var(--ap-text);
+        font-size:18px;
+        font-weight:900;
+        line-height:1.12;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      .ap-artist{
+        color:var(--ap-muted);
+        font-size:14px;
+        margin-top:4px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      .ap-artist a{
+        color:inherit;
+        text-decoration:none;
+      }
+
+      .ap-mini-actions{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        flex-shrink:0;
+      }
+
+      .ap-btn,
+      .ap-main-btn,
+      .ap-mini-play,
+      .ap-buy-btn{
+        appearance:none;
+        border:none;
+        outline:none;
+        cursor:pointer;
+      }
+
+      .ap-btn{
+        width:42px;
+        height:42px;
+        border-radius:14px;
+        display:grid;
+        place-items:center;
+        background:transparent;
+        color:var(--ap-text);
+      }
+
+      .ap-btn:hover{
+        background:rgba(255,255,255,.08);
+      }
+
+      .ap-mini-play{
+        width:56px;
+        height:56px;
+        border-radius:50%;
+        background:transparent;
+        border:2px solid rgba(255,255,255,.55);
+        display:grid;
+        place-items:center;
+        color:#fff;
+      }
+
+      .ap-btn svg,
+      .ap-main-btn svg,
+      .ap-mini-play svg,
+      .ap-buy-btn svg{
+        width:23px;
+        height:23px;
+        display:block;
+        fill:none;
+        stroke:currentColor;
+        stroke-width:2;
+        stroke-linecap:round;
+        stroke-linejoin:round;
+      }
+
+      .ap-mini-play svg{
+        width:25px;
+        height:25px;
+      }
+
+      .ap-backdrop{
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.62);
+        opacity:0;
+        pointer-events:none;
+        transition:.2s ease;
+        z-index:10041;
+      }
+
+      .ap-backdrop.show{
+        opacity:1;
+        pointer-events:auto;
+      }
+
+      .ap-sheet{
+        position:fixed;
+        left:0;
+        right:0;
+        bottom:0;
+        z-index:10042;
+        transform:translateY(102%);
+        transition:transform .24s ease;
+        background:linear-gradient(180deg,var(--ap-bg) 0%, var(--ap-bg-2) 100%);
+        border-radius:28px 28px 0 0;
+        max-height:92vh;
+        overflow:auto;
+        box-shadow:0 -12px 40px rgba(0,0,0,.34);
+        pointer-events:auto;
+      }
+
+      .ap-sheet.show{
+        transform:translateY(0);
+      }
+
+      .ap-full{
+        width:min(1100px, 100%);
+        margin:0 auto;
+        padding:18px 18px 26px;
+        color:var(--ap-text);
+      }
+
+      .ap-top{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        margin-bottom:18px;
+      }
+
+      .ap-top-right{
+        display:flex;
+        align-items:center;
+        gap:8px;
+      }
+
+      .ap-main-layout{
+        display:grid;
+        grid-template-columns:minmax(320px, 460px) minmax(320px, 1fr);
+        gap:24px;
+        align-items:start;
+      }
+
+      .ap-main-cover{
+        width:100%;
+        aspect-ratio:1/1;
+        border-radius:24px;
+        overflow:hidden;
+        background:rgba(255,255,255,.08);
+        box-shadow:0 14px 40px rgba(0,0,0,.18);
+      }
+
+      .ap-main-cover img{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+        display:block;
+      }
+
+      .ap-main-meta{
+        min-width:0;
+      }
+
+      .ap-main-title{
+        font-size:32px;
+        line-height:1.12;
+        font-weight:950;
+        margin:0;
+      }
+
+      .ap-main-artist{
+        color:var(--ap-muted);
+        font-size:17px;
+        margin-top:8px;
+      }
+
+      .ap-main-artist a{
+        color:inherit;
+        text-decoration:none;
+      }
+
+      .ap-main-artist a:hover{
+        color:#fff;
+        text-decoration:underline;
+      }
+
+      .ap-link{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        color:#fff;
+        text-decoration:none;
+        font-weight:800;
+        margin-top:14px;
+        opacity:.92;
+      }
+
+      .ap-link:hover{
+        text-decoration:underline;
+      }
+
+      .ap-buy-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        margin-top:18px;
+        flex-wrap:wrap;
+      }
+
+      .ap-buy-btn{
+        min-height:56px;
+        padding:0 18px;
+        border-radius:18px;
+        background:#2563ff;
+        color:#fff;
+        display:inline-flex;
+        align-items:center;
+        gap:10px;
+        font-size:16px;
+        font-weight:900;
+        box-shadow:0 10px 28px rgba(37,99,255,.24);
+      }
+
+      .ap-buy-btn:hover{
+        filter:brightness(1.04);
+      }
+
+      .ap-row-actions{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        flex-wrap:wrap;
+      }
+
+      .ap-progress-wrap{
+        margin-top:20px;
+      }
+
+      .ap-progress{
+        width:100%;
+        appearance:none;
+        height:4px;
+        border-radius:999px;
+        background:rgba(255,255,255,.24);
+        outline:none;
+      }
+
+      .ap-progress::-webkit-slider-thumb{
+        appearance:none;
+        width:16px;
+        height:16px;
+        border-radius:50%;
+        background:#fff;
+        border:none;
+      }
+
+      .ap-time{
+        margin-top:10px;
+        display:flex;
+        justify-content:space-between;
+        font-size:13px;
+        color:var(--ap-muted);
+      }
+
+      .ap-controls{
+        margin-top:18px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+      }
+
+      .ap-controls-center{
+        display:flex;
+        align-items:center;
+        gap:18px;
+      }
+
+      .ap-main-btn{
+        display:grid;
+        place-items:center;
+        background:transparent;
+        color:#fff;
+      }
+
+      .ap-main-btn.small{
+        width:54px;
+        height:54px;
+      }
+
+      .ap-main-btn.big{
+        width:86px;
+        height:86px;
+        border-radius:50%;
+        background:#fff;
+        color:#563724;
+      }
+
+      .ap-main-btn.big svg{
+        width:34px;
+        height:34px;
+      }
+
+      .ap-active{
+        color:var(--ap-accent)!important;
+      }
+
+      .ap-panel{
+        position:fixed;
+        left:0;
+        right:0;
+        bottom:0;
+        z-index:10043;
+        transform:translateY(102%);
+        transition:transform .24s ease;
+        background:#090c11;
+        color:#fff;
+        border-radius:28px 28px 0 0;
+        max-height:82vh;
+        overflow:auto;
+        box-shadow:0 -10px 30px rgba(0,0,0,.34);
+        pointer-events:auto;
+        display:block;
+        visibility:hidden;
+        opacity:0;
+      }
+
+      .ap-panel.show{
+        transform:translateY(0);
+        visibility:visible;
+        opacity:1;
+      }
+
+      .ap-panel-inner{
+        width:min(860px, 100%);
+        margin:0 auto;
+        padding:18px 18px 24px;
+      }
+
+      .ap-panel-head{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        margin-bottom:18px;
+      }
+
+      .ap-panel-title{
+        font-size:20px;
+        font-weight:900;
+        margin:0;
+      }
+
+      .ap-switch{
+        width:58px;
+        height:34px;
+        border:none;
+        border-radius:999px;
+        position:relative;
+        background:rgba(255,255,255,.14);
+        cursor:pointer;
+      }
+
+      .ap-switch::after{
+        content:"";
+        position:absolute;
+        top:4px;
+        left:4px;
+        width:26px;
+        height:26px;
+        border-radius:50%;
+        background:#fff;
+        transition:left .18s ease;
+      }
+
+      .ap-switch.on::after{
+        left:28px;
+      }
+
+      .ap-card{
+        background:#1e232b;
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:22px;
+        padding:18px;
+      }
+
+      .ap-tabs{
+        display:flex;
+        gap:12px;
+        margin:18px 0 18px;
+      }
+
+      .ap-tab{
+        border:none;
+        min-height:54px;
+        padding:0 22px;
+        border-radius:999px;
+        background:#232831;
+        color:rgba(255,255,255,.7);
+        font-size:17px;
+        font-weight:900;
+        cursor:pointer;
+      }
+
+      .ap-tab.active{
+        background:#fff;
+        color:#111;
+      }
+
+      .ap-grid{
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:14px;
+      }
+
+      .ap-fx-card,
+      .ap-skin-card{
+        border:none;
+        background:#232831;
+        color:#fff;
+        text-align:left;
+        border-radius:18px;
+        padding:16px;
+        cursor:pointer;
+      }
+
+      .ap-queue-item{
+        border:none;
+        background:#232831;
+        color:#fff;
+        text-align:left;
+        border-radius:16px;
+        padding:12px;
+        cursor:pointer;
+      }
+
+      .ap-fx-card.active,
+      .ap-skin-card.active,
+      .ap-queue-item.active{
+        outline:1px solid var(--ap-accent);
+        box-shadow:0 0 0 1px var(--ap-accent) inset;
+      }
+
+      .ap-fx-icon{
+        width:54px;
+        height:54px;
+        border-radius:16px;
+        display:grid;
+        place-items:center;
+        margin-bottom:16px;
+        background:linear-gradient(135deg,#70e4ff,#a8ffb2);
+        color:#111;
+        font-weight:900;
+        font-size:18px;
+      }
+
+      .ap-fx-title,
+      .ap-skin-title{
+        font-size:18px;
+        font-weight:900;
+      }
+
+      .ap-fx-sub{
+        color:rgba(255,255,255,.64);
+        font-size:14px;
+        margin-top:8px;
+      }
+
+      .ap-simple-list{
+        display:grid;
+        gap:12px;
+        margin-top:18px;
+      }
+
+      .ap-simple-btn{
+        border:none;
+        background:#2a2f38;
+        color:#fff;
+        min-height:52px;
+        border-radius:16px;
+        font-size:16px;
+        font-weight:900;
+        cursor:pointer;
+      }
+
+      .ap-skin-preview{
+        aspect-ratio:9/14;
+        border-radius:16px;
+        position:relative;
+        overflow:hidden;
+        margin-bottom:12px;
+        background:linear-gradient(180deg,#8b5a3c 0%, #6f452f 100%);
+      }
+
+      .ap-skin-preview.graphite{
+        background:linear-gradient(180deg,#50555e 0%, #1f232a 100%);
+      }
+
+      .ap-skin-preview.midnight{
+        background:linear-gradient(180deg,#0c1633 0%, #050914 100%);
+      }
+
+      .ap-skin-preview.sunset{
+        background:linear-gradient(180deg,#db5d31 0%, #5a210e 100%);
+      }
+
+      .ap-skin-preview.ocean{
+        background:linear-gradient(180deg,#1685d1 0%, #0b2a4d 100%);
+      }
+
+      .ap-skin-art{
+        position:absolute;
+        left:50%;
+        top:14%;
+        transform:translateX(-50%);
+        width:42%;
+        aspect-ratio:1/1;
+        border-radius:10px;
+        overflow:hidden;
+        background:rgba(255,255,255,.12);
+      }
+
+      .ap-skin-art img{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+      }
+
+      .ap-download-badge{
+        position:absolute;
+        right:10px;
+        top:10px;
+        width:40px;
+        height:40px;
+        border-radius:14px;
+        background:rgba(0,0,0,.28);
+        display:grid;
+        place-items:center;
+      }
+
+      .ap-queue-list{
+        display:grid;
+        gap:10px;
+      }
+
+      .ap-queue-item{
+        display:flex;
+        align-items:center;
+        gap:12px;
+      }
+
+      .ap-queue-thumb{
+        width:52px;
+        height:52px;
+        border-radius:12px;
+        overflow:hidden;
+        background:rgba(255,255,255,.08);
+        flex-shrink:0;
+      }
+
+      .ap-queue-thumb img{
+        width:100%;
+        height:100%;
+        object-fit:cover;
+      }
+
+      .ap-queue-meta{
+        min-width:0;
+      }
+
+      .ap-queue-title{
+        font-size:15px;
+        font-weight:900;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      .ap-queue-artist{
+        font-size:13px;
+        color:rgba(255,255,255,.68);
+        margin-top:4px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      @media (max-width: 860px){
+        .ap-main-layout{
+          grid-template-columns:1fr;
+          gap:18px;
+        }
+        .ap-main-title{
+          font-size:24px;
+        }
+      }
+
+      @media (max-width: 700px){
+        body{
+          padding-bottom:88px;
+        }
+
+        .ap-mini{
+          width:calc(100vw - 12px);
+          margin-bottom:6px;
+          border-radius:18px;
+        }
+
+        .ap-mini-inner{
+          min-height:70px;
+          padding:8px 10px;
+          gap:10px;
+        }
+
+        .ap-cover{
+          width:46px;
+          height:46px;
+          border-radius:12px;
+        }
+
+        .ap-title{
+          font-size:15px;
+        }
+
+        .ap-artist{
+          font-size:12px;
+        }
+
+        .ap-mini-play{
+          width:46px;
+          height:46px;
+        }
+
+        .ap-btn{
+          width:34px;
+          height:34px;
+        }
+
+        .ap-sheet{
+          max-height:100dvh;
+          height:100dvh;
+          border-radius:20px 20px 0 0;
+          overflow:hidden;
+        }
+
+        .ap-full{
+          padding:10px 10px 14px;
+          height:100%;
+          display:flex;
+          flex-direction:column;
+        }
+
+        .ap-top{
+          margin-bottom:8px;
+        }
+
+        .ap-main-layout{
+          grid-template-columns:1fr;
+          gap:10px;
+          height:100%;
+        }
+
+        .ap-main-cover{
+          width:min(100%, 320px);
+          margin:0 auto;
+          aspect-ratio:1/1;
+          border-radius:18px;
+        }
+
+        .ap-main-meta{
+          display:flex;
+          flex-direction:column;
+          min-height:0;
+        }
+
+        .ap-main-title{
+          font-size:17px;
+          line-height:1.15;
+        }
+
+        .ap-main-artist{
+          font-size:14px;
+          margin-top:4px;
+        }
+
+        .ap-link{
+          margin-top:8px;
+          font-size:14px;
+        } 
+
+        .ap-buy-row{
+          margin-top:10px;
+          gap:8px;
+        }
+
+        .ap-buy-btn{
+          width:100%;
+          justify-content:center;
+          min-height:48px;
+          border-radius:15px;
+          font-size:15px;
+        }
+
+        .ap-row-actions{
+          gap:6px;
+        }
+
+        .ap-progress-wrap{
+          margin-top:10px;
+        }
+
+        .ap-time{
+          margin-top:6px;
+          font-size:12px;
+        }
+
+        .ap-controls{
+          margin-top:10px;
+          padding-bottom:6px;
+        }
+
+        .ap-controls-center{
+          gap:10px;
+        } 
+
+        .ap-main-btn.big{
+          width:62px;
+          height:62px;
+        }
+
+        .ap-main-btn.big svg{
+          width:26px;
+          height:26px;
+        }
+
+        .ap-main-btn.small{
+          width:40px;
+          height:40px;
+        }
+
+        .ap-grid{
+          grid-template-columns:1fr 1fr;
+          gap:10px;
+        }
+
+        .ap-panel{
+          max-height:76vh;
+          min-height:320px;
+          border-radius:22px 22px 0 0;
+        }
+
+        .ap-panel-inner{
+          padding:14px 12px 18px;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function renderPlayer() {
+    if (document.getElementById("audioryPlayerRoot")) return;
+
+    const root = document.createElement("div");
+    root.id = "audioryPlayerRoot";
+    root.className = "audiory-player-root";
+    root.innerHTML = `
+      <div class="ap-mini" id="apMini">
+        <div class="ap-mini-inner">
+          <div class="ap-mini-main" id="apMiniMain">
+            <div class="ap-cover"><img id="apMiniImg" alt=""></div>
+            <div class="ap-meta">
+              <div class="ap-title" id="apMiniTitle">Nothing playing</div>
+              <div class="ap-artist" id="apMiniArtist">Choose a beat</div>
+            </div>
+          </div>
+          <div class="ap-mini-actions">
+            <button class="ap-mini-play" id="apMiniPlay" aria-label="Play"></button>
+            <button class="ap-btn" id="apMiniQueue" aria-label="Queue"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ap-backdrop" id="apBackdrop"></div>
+
+      <div class="ap-sheet" id="apSheet">
+        <div class="ap-full">
+          <div class="ap-top">
+            <button class="ap-btn" id="apCloseFull" aria-label="Close"></button>
+            <div class="ap-top-right">
+              <button class="ap-btn" id="apOpenSkins" aria-label="Skins"></button>
+              <button class="ap-btn" id="apShare" aria-label="Share"></button>
+            </div>
+          </div>
+
+          <div class="ap-main-layout">
+            <div class="ap-main-cover">
+              <img id="apFullImg" alt="">
+            </div>
+
+            <div class="ap-main-meta">
+              <h2 class="ap-main-title" id="apFullTitle">Nothing playing</h2>
+              <div class="ap-main-artist" id="apFullArtist"></div>
+              <a href="#" class="ap-link" id="apTrackLink">View track page</a>
+
+              <div class="ap-buy-row">
+                <button class="ap-buy-btn" id="apBuyBtn" type="button"></button>
+
+                <div class="ap-row-actions">
+                  <button class="ap-btn" id="apQueueBtn" aria-label="Queue"></button>
+                </div>
+              </div>
+
+              <div class="ap-progress-wrap">
+                <input type="range" min="0" max="100" value="0" class="ap-progress" id="apProgress">
+                <div class="ap-time">
+                  <span id="apCurrentTime">00:00</span>
+                  <span id="apDuration">00:00</span>
+                </div>
+              </div>
+
+              <div class="ap-controls">
+                <button class="ap-btn" id="apShuffleBtn" aria-label="Shuffle"></button>
+
+                <div class="ap-controls-center">
+                  <button class="ap-main-btn small" id="apPrevBtn" aria-label="Previous"></button>
+                  <button class="ap-main-btn big" id="apPlayBtn" aria-label="Play"></button>
+                  <button class="ap-main-btn small" id="apNextBtn" aria-label="Next"></button>
+                </div>
+
+                <button class="ap-btn" id="apRepeatBtn" aria-label="Repeat"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ap-panel" id="apSkinPanel">
+        <div class="ap-panel-inner">
+          <div class="ap-panel-head">
+            <button class="ap-btn" id="apCloseSkin"></button>
+            <h3 class="ap-panel-title">Player Skin</h3>
+            <button class="ap-btn" id="apDownloadedOpen" aria-label="Downloaded skins"></button>
+          </div>
+
+          <h3 style="font-size:22px;margin:0 0 14px;">Default</h3>
+          <div class="ap-grid" id="apSkinGrid"></div>
+
+          <h3 style="font-size:22px;margin:24px 0 14px;">Downloaded skins</h3>
+          <div class="ap-grid" id="apDownloadedGrid"></div>
+        </div>
+      </div>
+
+      <div class="ap-panel" id="apQueuePanel">
+        <div class="ap-panel-inner">
+          <div class="ap-panel-head">
+            <button class="ap-btn" id="apCloseQueue"></button>
+            <h3 class="ap-panel-title">Queue</h3>
+            <div style="width:42px;"></div>
+          </div>
+          <div class="ap-queue-list" id="apQueueList"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(root);
+  }
+
+  function cacheDom() {
+    window.__AP = {
+      mini: document.getElementById("apMini"),
+      miniMain: document.getElementById("apMiniMain"),
+      miniImg: document.getElementById("apMiniImg"),
+      miniTitle: document.getElementById("apMiniTitle"),
+      miniArtist: document.getElementById("apMiniArtist"),
+      miniPlay: document.getElementById("apMiniPlay"),
+      miniQueue: document.getElementById("apMiniQueue"),
+
+      backdrop: document.getElementById("apBackdrop"),
+      sheet: document.getElementById("apSheet"),
+      closeFull: document.getElementById("apCloseFull"),
+      openSkins: document.getElementById("apOpenSkins"),
+      share: document.getElementById("apShare"),
+
+      fullImg: document.getElementById("apFullImg"),
+      fullTitle: document.getElementById("apFullTitle"),
+      fullArtist: document.getElementById("apFullArtist"),
+      trackLink: document.getElementById("apTrackLink"),
+      buyBtn: document.getElementById("apBuyBtn"),
+
+      queueBtn: document.getElementById("apQueueBtn"),
+
+      progress: document.getElementById("apProgress"),
+      currentTime: document.getElementById("apCurrentTime"),
+      duration: document.getElementById("apDuration"),
+
+      shuffleBtn: document.getElementById("apShuffleBtn"),
+      prevBtn: document.getElementById("apPrevBtn"),
+      playBtn: document.getElementById("apPlayBtn"),
+      nextBtn: document.getElementById("apNextBtn"),
+      repeatBtn: document.getElementById("apRepeatBtn"),
+
+      skinPanel: document.getElementById("apSkinPanel"),
+      closeSkin: document.getElementById("apCloseSkin"),
+      downloadedOpen: document.getElementById("apDownloadedOpen"),
+      skinGrid: document.getElementById("apSkinGrid"),
+      downloadedGrid: document.getElementById("apDownloadedGrid"),
+
+      queuePanel: document.getElementById("apQueuePanel"),
+      closeQueue: document.getElementById("apCloseQueue"),
+      queueList: document.getElementById("apQueueList"),
+    };
+
+    setButtonIcons();
+  }
+
+  function setButtonIcons() {
+    const AP = window.__AP;
+    AP.miniPlay.innerHTML = iconPlay();
+    AP.miniQueue.innerHTML = iconQueue();
+
+    AP.closeFull.innerHTML = iconChevronDown();
+    AP.openSkins.innerHTML = iconSparkles();
+    AP.share.innerHTML = iconShare();
+
+    AP.buyBtn.innerHTML = `${iconBagPlus()}<span>Buy License</span>`;
+    AP.queueBtn.innerHTML = iconQueue();
+
+    AP.shuffleBtn.innerHTML = iconShuffle();
+    AP.prevBtn.innerHTML = iconPrev();
+    AP.playBtn.innerHTML = iconPlay();
+    AP.nextBtn.innerHTML = iconNext();
+    AP.repeatBtn.innerHTML = iconRepeat();
+
+    AP.closeSkin.innerHTML = iconBack();
+    AP.downloadedOpen.innerHTML = iconSettings();
+    AP.closeQueue.innerHTML = iconBack();
+  }
+
+  function bindEvents() {
+    document.addEventListener("click", handleGlobalClick);
+
+    const AP = window.__AP;
+
+    AP.backdrop.addEventListener("click", () => {
+      closeAllPanels();
+    });
+
+    // stop player clicks from leaking outside
+    [
+      AP.mini,
+      AP.sheet,
+      AP.skinPanel,
+      AP.queuePanel
+    ].forEach((el) => {
+      if (!el) return;
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+    });
+
+    AP.miniMain.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openFullPlayer();
+    });
+
+    AP.miniPlay.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      await togglePlay();
+    });
+
+    AP.miniQueue.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openQueuePanel();
+    });
+
+    AP.closeFull.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeFullPlayer();
+    });
+
+    AP.openSkins.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openSkinPanel();
+    });
+
+    AP.share.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      shareCurrentTrack();
+    });
+
+    AP.queueBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openQueuePanel();
+    });
+
+    AP.buyBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openCurrentBeatBuy();
+    });
+
+    AP.closeSkin.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeSkinPanel();
+    });
+
+    AP.closeQueue.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeQueuePanel();
+    });
+
+    AP.trackLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!currentTrack?.beatUrl) return;
+      location.href = currentTrack.beatUrl;
+    });
+
+    AP.fullArtist.addEventListener("click", (e) => {
+      const link = e.target.closest("a");
+      if (!link) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const href = link.getAttribute("href");
+      if (href) location.href = href;
+    });
+
+    AP.miniArtist.addEventListener("click", (e) => {
+      const link = e.target.closest("a");
+      if (!link) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const href = link.getAttribute("href");
+      if (href) location.href = href;
+    });
+
+    AP.shuffleBtn.addEventListener("click", () => {
+      shuffle = !shuffle;
+      updateUi();
+      savePlayerState();
+    });
+
+    AP.repeatBtn.addEventListener("click", () => {
+      if (repeatMode === "off") repeatMode = "all";
+      else if (repeatMode === "all") repeatMode = "one";
+      else repeatMode = "off";
+      updateUi();
+      savePlayerState();
+    });
+
+    AP.prevBtn.addEventListener("click", playPrev);
+    AP.playBtn.addEventListener("click", togglePlay);
+    AP.nextBtn.addEventListener("click", playNext);
+
+    AP.progress.addEventListener("input", () => {
+      isSeeking = true;
+    });
+
+    AP.progress.addEventListener("change", () => {
+      if (!audio.duration) return;
+      const p = Number(AP.progress.value || 0);
+      audio.currentTime = (p / 100) * audio.duration;
+      isSeeking = false;
+    });
+
+    AP.downloadedOpen.addEventListener("click", () => {
+      AP.downloadedGrid.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    audio.addEventListener("timeupdate", () => {
+      if (!audio.duration || isSeeking) return;
+      const percent = (audio.currentTime / audio.duration) * 100;
+      AP.progress.value = String(percent);
+      AP.currentTime.textContent = formatTime(audio.currentTime);
+      AP.duration.textContent = formatTime(audio.duration);
+      savePlayerState();
+    });
+    audio.addEventListener("loadedmetadata", () => {
+      AP.duration.textContent = formatTime(audio.duration || 0);
+      savePlayerState();
+
+    });
+
+    audio.addEventListener("play", () => {
+      updateUi();
+      updateCardButtons();
+      savePlayerState();
+
+    });
+
+    audio.addEventListener("pause", () => {
+      updateUi();
+      updateCardButtons();
+      savePlayerState();
+
+    });
+
+    audio.addEventListener("ended", () => {
+      if (repeatMode === "one") {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+        return;
+      }
+      if (repeatMode === "all" || currentIndex < queue.length - 1) {
+        playNext();
+      } else {
+        updateUi();
+      }
+    });
+
+    audio.addEventListener("error", () => {
+      console.error("[player audio error]", {
+        error: audio.error,
+        src: audio.src,
+        currentTrack
+      });
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) collectQueueFromPage();
+    });
+  }
+
+  async function handleGlobalClick(e) {
+    const btn = e.target.closest(".play-fab, [data-play-btn]");
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    collectQueueFromPage();
+
+    const card = btn.closest("[data-beat-id]");
+    const beatId = card?.getAttribute("data-beat-id") || btn.getAttribute("data-beat-id") || "";
+    if (!beatId) return;
+
+    const idx = queue.findIndex((t) => String(t.id) === String(beatId));
+    if (idx < 0) return;
+
+    if (currentTrack && String(currentTrack.id) === String(beatId)) {
+      openFullPlayer(); // opens instantly
+      await togglePlay();
+      return;
+    }
+
+    currentIndex = idx;
+
+    // ✅ open UI first, do heavy work after
+    currentTrack = queue[idx];
+    updateUi();
+    window.__AP.mini.classList.add("show");
+    openFullPlayer();
+
+    await loadTrack(queue[idx], true);
+  }
+
+  function collectQueueFromPage() {
+    const cards = Array.from(document.querySelectorAll("[data-beat-id]"));
+    const nextQueue = [];
+
+    cards.forEach((card) => {
+      const id = card.getAttribute("data-beat-id") || "";
+      if (!id) return;
+
+      const beat = findBeatById(id);
+      const audioUrl =
+        beat?.previewAudio ||
+        beat?.audio ||
+        card.querySelector(".play-fab")?.getAttribute("data-audio-url") ||
+        card.querySelector("[data-play-btn]")?.getAttribute("data-audio-url") ||
+        "";
+
+      if (!audioUrl) return;
+
+      const title =
+        beat?.title ||
+        card.querySelector(".t")?.textContent?.trim() ||
+        card.querySelector(".home-title-clamp")?.textContent?.trim() ||
+        "Untitled Beat";
+
+      const producerName =
+        beat?.producerName ||
+        card.querySelector(".p")?.childNodes?.[0]?.textContent?.trim() ||
+        card.querySelector(".home-producer-clamp")?.childNodes?.[0]?.textContent?.trim() ||
+        "Unknown Producer";
+
+      const artwork =
+        beat?.artwork ||
+        card.querySelector(".beat-cover img")?.getAttribute("src") ||
+        "";
+
+      const beatUrl =
+        card.querySelector("[data-open-beat='1']")?.getAttribute("href") ||
+        `/beat/?id=${encodeURIComponent(id)}`;
+
+      const producerUrl =
+        card.querySelector("[data-producer-link='1']")?.getAttribute("href") ||
+        (beat?.producerId ? `/producer-profile/?producerId=${encodeURIComponent(beat.producerId)}` : "#");
+
+      nextQueue.push({
+        id,
+        title,
+        producerId: beat?.producerId || "",
+        producerName,
+        producerUrl,
+        artwork,
+        audioUrl,
+        beatUrl,
+        price: Number(beat?.price || 0),
+        isFree: isFreeBeatForPlayer(beat)
+      });
+    });
+
+    queue = nextQueue;
+    renderQueue();
+  }
+
+  function findBeatById(id) {
+    return (window.__LATEST_BEATS__ || []).find((b) => String(b?.id || "") === String(id)) || null;
+  }
+
+  async function loadTrack(track, autoplay = true) {
+    if (!track?.audioUrl) return;
+
+    currentTrack = track;
+    updateUi();
+    window.__AP.mini.classList.add("show");
+    renderQueue();
+    updateCardButtons();
+
+    if (audio.Src !== track.audioUrl) {
+      audio.pause();
+
+      audio.removeAttribute("src");
+      audio.load();
+
+      audio.src = track.audioUrl;
+      audio.load();
+    }
+
+    audio.currentTime = 0;
+
+    if (autoplay) {
+      try {
+        await audio.play();
+        await countPlay(track);
+      } catch (e) {
+        console.error("[player] play error:", e);
+      }
+    }
+    updateCardButtons();
+    renderQueue();
+    renderSkinCards();
+    updateUi();
+    savePlayerState();
+
+  }
+
+  async function togglePlay() {
+    if (!currentTrack) {
+      collectQueueFromPage();
+      if (!queue.length) return;
+      currentIndex = 0;
+      await loadTrack(queue[0], true);
+      return;
+     }
+
+    if (audio.paused) {
+      try {
+        await audio.play();
+        await countPlay(currentTrack);
+      } catch (e) {
+        console.error("[player] resume failed", e);
+      }
+    } else {
+      audio.pause();
+    }
+    savePlayerState();
+  }
+
+  async function playNext() {
+    if (!queue.length) return;
+
+    if (currentIndex < 0) {
+      currentIndex = 0;
+      await loadTrack(queue[currentIndex], true);
+      return;
+    }
+
+    if (shuffle && queue.length > 1) {
+      let next = currentIndex;
+      while (next === currentIndex) {
+        next = Math.floor(Math.random() * queue.length);
+      }
+      currentIndex = next;
+    } else {
+      currentIndex += 1;
+      if (currentIndex >= queue.length) {
+        currentIndex = repeatMode === "all" ? 0 : queue.length - 1;
+      }
+    }
+
+    await loadTrack(queue[currentIndex], true);
+  }
+
+  async function playPrev() {
+    if (!queue.length) return;
+
+    if (audio.currentTime > 3) {
+      audio.currentTime = 0;
+      return;
+    }
+
+    if (currentIndex < 0) {
+      currentIndex = 0;
+      await loadTrack(queue[currentIndex], true);
+      return;
+    }
+
+    currentIndex -= 1;
+    if (currentIndex < 0) {
+      currentIndex = repeatMode === "all" ? queue.length - 1 : 0;
+    }
+
+    await loadTrack(queue[currentIndex], true);
+  }
+
+  async function countPlay(track) {
+    if (!track?.id) return;
+    if (playedSession[track.id]) return;
+    playedSession[track.id] = true;
+
+    try {
+      const FB = window.FB;
+      if (FB?.db && typeof FB.doc === "function" && typeof FB.updateDoc === "function" && typeof FB.increment === "function") {
+        await FB.updateDoc(
+          FB.doc(FB.db, "beats", track.id),
+          { plays: FB.increment(1), lastPlayedAt: Date.now() }
+        );
+      }
+    } catch (e) {
+      console.log("[player] play count failed", e);
+    }
+
+    try {
+      if (typeof window.logAnalyticsEvent === "function") {
+        await window.logAnalyticsEvent({
+          producerId: track.producerId || "",
+          type: "play",
+          beatId: track.id
+        });
+      }
+    } catch (e) {
+      console.log("[player] analytics play failed", e);
+    }
+  }
+
+  async function restorePlayerFromSession() {
+    const saved = loadPlayerState();
+    if (!saved || !saved.currentTrack?.audioUrl) return;
+
+    try {
+      queue = Array.isArray(saved.queue) ? saved.queue : [];
+      currentTrack = saved.currentTrack || null;
+      currentIndex = Number.isFinite(saved.currentIndex) ? saved.currentIndex : -1;
+      shuffle = !!saved.shuffle;
+      repeatMode = saved.repeatMode || "off";
+      currentSkin = saved.currentSkin || currentSkin;
+
+      applySkin(currentSkin);
+      renderSkinCards();
+
+      audio.src = currentTrack.audioUrl;
+      audio.load();
+      window.__AP.mini.classList.add("show");
+      updateUi();
+      renderQueue();
+      updateCardButtons();
+
+      audio.addEventListener("loadedmetadata", function onMeta() {
+        audio.removeEventListener("loadedmetadata", onMeta);
+        const t = Number(saved.currentTime || 0);
+        if (Number.isFinite(t) && t > 0) {
+          audio.currentTime = t;
+        }
+
+      // On mobile Safari, auto-play after page restore is unreliable.
+      // We restore the player UI and time, but do not force playback here.
+      });
+    } catch (e) {
+      console.warn("[player] restore failed", e);
+    }
+  }
+
+  function updateUi() {
+    const AP = window.__AP;
+    const playing = currentTrack && !audio.paused;
+
+    AP.miniPlay.innerHTML = playing ? iconPause() : iconPlay();
+    AP.playBtn.innerHTML = playing ? iconPause() : iconPlay();
+
+    AP.shuffleBtn.classList.toggle("ap-active", shuffle);
+    AP.repeatBtn.classList.toggle("ap-active", repeatMode !== "off");
+    AP.repeatBtn.innerHTML = repeatMode === "one" ? iconRepeatOne() : iconRepeat();
+
+    AP.currentTime.textContent = formatTime(audio.currentTime || 0);
+    AP.duration.textContent = formatTime(audio.duration || 0);
+
+    if (!currentTrack) {
+      AP.fullArtist.textContent = "";
+      AP.trackLink.href = "#";
+      AP.buyBtn.innerHTML = `${iconBagPlus()}<span>Buy License</span>`;
+      return;
+    }
+
+    AP.miniImg.src = currentTrack.artwork || "";
+    AP.fullImg.src = currentTrack.artwork || "";
+    AP.miniTitle.textContent = currentTrack.title || "Untitled Beat";
+    AP.miniArtist.innerHTML = currentTrack.producerUrl
+      ? `<a href="${escapeAttr(currentTrack.producerUrl)}">${escapeHtml(currentTrack.producerName || "Unknown Producer")}</a>`
+      : escapeHtml(currentTrack.producerName || "Unknown Producer");
+
+    AP.fullTitle.textContent = currentTrack.title || "Untitled Beat";
+    AP.fullArtist.innerHTML = currentTrack.producerUrl
+      ? `<a href="${escapeAttr(currentTrack.producerUrl)}">${escapeHtml(currentTrack.producerName || "Unknown Producer")}</a>`
+      : escapeHtml(currentTrack.producerName || "Unknown Producer");
+
+    AP.trackLink.href = currentTrack.beatUrl || "#";
+
+    AP.buyBtn.innerHTML = currentTrack.isFree
+      ? `${iconBagPlus()}<span>Get Free Beat</span>`
+      : `${iconBagPlus()}<span>Buy License</span>`;
+  }
+
+  function updateCardButtons() {
+    document.querySelectorAll(".play-fab .playIcon, [data-play-btn] .playIcon").forEach((icon) => {
+      const btn = icon.closest(".play-fab, [data-play-btn]");
+      const card = btn?.closest("[data-beat-id]");
+      const beatId = card?.getAttribute("data-beat-id") || btn?.getAttribute("data-beat-id") || "";
+      const isCurrent = currentTrack && String(currentTrack.id) === String(beatId) && !audio.paused;
+      icon.textContent = isCurrent ? "❚❚" : "▶";
+    });
+  }
+
+  function openFullPlayer() {
+    if (!currentTrack) return;
+    const AP = window.__AP;
+    AP.backdrop.classList.add("show");
+    AP.sheet.classList.add("show");
+    AP.skinPanel.classList.remove("show");
+    AP.queuePanel.classList.remove("show");
+  }
+
+  function closeFullPlayer() {
+    const AP = window.__AP;
+    AP.sheet.classList.remove("show");
+    AP.backdrop.classList.remove("show");
+  }
+
+  function openSkinPanel() {
+    const AP = window.__AP;
+    if (!AP || !AP.skinPanel) return;
+
+    renderSkinCards();
+
+    AP.backdrop.classList.add("show");
+    AP.sheet.classList.remove("show");
+    AP.queuePanel.classList.remove("show");
+    requestAnimationFrame(() => {
+      AP.skinPanel.classList.add("show");
+    });
+  }
+
+  function closeSkinPanel() {
+    const AP = window.__AP;
+    if (!AP || !AP.skinPanel) return;
+
+    AP.skinPanel.classList.remove("show");
+
+    if (
+      !AP.queuePanel.classList.contains("show") &&
+      !AP.sheet.classList.contains("show")
+    ) {
+      AP.backdrop.classList.remove("show");
+    }
+  }
+
+  function openQueuePanel() {
+    const AP = window.__AP;
+    renderQueue();
+    AP.backdrop.classList.add("show");
+    AP.sheet.classList.remove("show");
+    AP.skinPanel.classList.remove("show");
+    requestAnimationFrame(() => {
+      AP.queuePanel.classList.add("show");
+    });
+  }
+
+  function closeQueuePanel() {
+    closeAllPanels();
+  }
+
+  function closeAllPanels() {
+    const AP = window.__AP;
+    AP.backdrop.classList.remove("show");
+    AP.sheet.classList.remove("show");
+    AP.skinPanel.classList.remove("show");
+    AP.queuePanel.classList.remove("show");
+  }
+
+  function renderQueue() {
+    const AP = window.__AP;
+    AP.queueList.innerHTML = queue.map((track, index) => `
+      <button class="ap-queue-item ${currentTrack && String(track.id) === String(currentTrack.id) ? "active" : ""}" data-ap-queue-index="${index}">
+        <div class="ap-queue-thumb">
+          ${track.artwork ? `<img src="${escapeAttr(track.artwork)}" alt="">` : ""}
+        </div>
+        <div class="ap-queue-meta">
+          <div class="ap-queue-title">${escapeHtml(track.title || "Untitled Beat")}</div>
+          <div class="ap-queue-artist">${escapeHtml(track.producerName || "Unknown Producer")}</div>
+        </div>
+      </button>
+    `).join("");
+
+    AP.queueList.querySelectorAll("[data-ap-queue-index]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const index = Number(btn.getAttribute("data-ap-queue-index"));
+        if (!Number.isFinite(index) || !queue[index]) return;
+        currentIndex = index;
+        loadTrack(queue[index], true);
+        closeQueuePanel();
+      });
+    });
+  }
+
+  function renderSkinCards() {
+    const skins = [
+      { key: "brown", title: "Original", cls: "" },
+      { key: "graphite", title: "Graphite", cls: "graphite" },
+      { key: "midnight", title: "Midnight", cls: "midnight" },
+      { key: "sunset", title: "Sunset", cls: "sunset" },
+      { key: "ocean", title: "Ocean", cls: "ocean" },
+    ];
+
+    const AP = window.__AP;
+    const art = currentTrack?.artwork || "";
+
+    AP.skinGrid.innerHTML = skins.map((skin) => `
+      <button class="ap-skin-card ${currentSkin === skin.key ? "active" : ""}" data-ap-skin="${skin.key}">
+        <div class="ap-skin-preview ${skin.cls}">
+          <div class="ap-skin-art">${art ? `<img src="${escapeAttr(art)}" alt="">` : ""}</div>
+        </div>
+        <div class="ap-skin-title">${skin.title}</div>
+      </button>
+    `).join("");
+
+    AP.downloadedGrid.innerHTML = skins
+      .filter((x) => downloadedSkins.includes(x.key))
+      .map((skin) => `
+        <button class="ap-skin-card ${currentSkin === skin.key ? "active" : ""}" data-ap-skin="${skin.key}">
+          <div class="ap-skin-preview ${skin.cls}">
+            <div class="ap-skin-art">${art ? `<img src="${escapeAttr(art)}" alt="">` : ""}</div>
+            <div class="ap-download-badge">${iconDownloadSmall()}</div>
+          </div>
+          <div class="ap-skin-title">${skin.title}</div>
+        </button>
+      `).join("");
+
+    document.querySelectorAll("[data-ap-skin]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentSkin = btn.getAttribute("data-ap-skin") || "brown";
+        localStorage.setItem("audiory_player_skin", currentSkin);
+        applySkin(currentSkin);
+        renderSkinCards();
+        savePlayerState();
+      });
+    });
+  }
+
+  function applySkin(key) {
+    const root = document.documentElement;
+
+    if (key === "graphite") {
+      root.style.setProperty("--ap-bg", "#565b64");
+      root.style.setProperty("--ap-bg-2", "#252932");
+      root.style.setProperty("--ap-accent", "#45e0ff");
+    } else if (key === "midnight") {
+      root.style.setProperty("--ap-bg", "#0e1838");
+      root.style.setProperty("--ap-bg-2", "#07101d");
+      root.style.setProperty("--ap-accent", "#56d0ff");
+    } else if (key === "sunset") {
+      root.style.setProperty("--ap-bg", "#d16035");
+      root.style.setProperty("--ap-bg-2", "#5d2411");
+      root.style.setProperty("--ap-accent", "#ffd15a");
+    } else if (key === "ocean") {
+      root.style.setProperty("--ap-bg", "#1686d6");
+      root.style.setProperty("--ap-bg-2", "#0f3156");
+      root.style.setProperty("--ap-accent", "#82fff2");
+    } else {
+      root.style.setProperty("--ap-bg", "#8b5a3c");
+      root.style.setProperty("--ap-bg-2", "#6f452f");
+      root.style.setProperty("--ap-accent", "#23d7ff");
+    }
+  }
+
+  function openCurrentBeatBuy() {
+    if (!currentTrack?.id) return;
+
+    const card = document.querySelector(`[data-beat-id="${cssEscapeSimple(currentTrack.id)}"]`);
+    if (!card) {
+      if (currentTrack.beatUrl) location.href = currentTrack.beatUrl;
+      return;
+    }
+
+    const freeBtn = card.querySelector("[data-free-download='1']");
+    const priceBtn = card.querySelector(".price-pill");
+
+    if (currentTrack.isFree && freeBtn) {
+      closeAllPanels();
+      setTimeout(() => freeBtn.click(), 30);
+      return;
+    }
+
+    if (priceBtn) {
+      closeAllPanels();
+      setTimeout(() => priceBtn.click(), 30);
+      return;
+    }
+
+    if (currentTrack.beatUrl) {
+      location.href = currentTrack.beatUrl;
+    }
+  }
+
+  function shareCurrentTrack() {
+    if (!currentTrack?.beatUrl) return;
+    const url = new URL(currentTrack.beatUrl, location.origin).toString();
+
+    if (navigator.share) {
+      navigator.share({
+        title: currentTrack.title || "Audiory",
+        text: currentTrack.producerName || "Audiory",
+        url
+      }).catch(() => {});
+      return;
+    }
+
+    navigator.clipboard.writeText(url).then(() => {
+      alert("Track link copied.");
+    }).catch(() => {
+      alert("Could not copy track link.");
+    });
+  }
+
+  function isFreeBeatForPlayer(beat) {
+    if (!beat) return false;
+    if (beat.freeDownload === true || beat.isFree === true) return true;
+    if (Number.isFinite(Number(beat.price)) && Number(beat.price) <= 0) return true;
+
+    const lic = beat.licenses || {};
+    const hasPaidLicense =
+      lic?.basic?.enabled === true ||
+      lic?.premium?.enabled === true ||
+      lic?.exclusive?.enabled === true;
+
+    return !hasPaidLicense;
+  }
+
+  function formatTime(sec) {
+    if (!Number.isFinite(sec)) return "00:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+
+  function escapeHtml(str) {
+    return String(str || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function escapeAttr(str) {
+    return escapeHtml(str);
+  }
+
+  function cssEscapeSimple(str) {
+    return String(str || "").replace(/"/g, '\\"');
+  }
+
+  window.addEventListener("beforeunload", () => {
+    savePlayerState();
+  });
+
+  function iconPlay() {
+    return `<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5-10-6.5Z" fill="currentColor" stroke="none"/></svg>`;
+  }
+
+  function iconPause() {
+    return `<svg viewBox="0 0 24 24"><path d="M8 5h3v14H8zM13 5h3v14h-3z" fill="currentColor" stroke="none"/></svg>`;
+  }
+
+  function iconPrev() {
+    return `<svg viewBox="0 0 24 24"><path d="M6 6v12"/><path d="M18 6 9.5 12 18 18z"/></svg>`;
+  }
+
+  function iconNext() {
+    return `<svg viewBox="0 0 24 24"><path d="M18 6v12"/><path d="M6 6 14.5 12 6 18z"/></svg>`;
+  }
+
+  function iconShuffle() {
+    return `<svg viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M4 20l7-7"/><path d="M21 3l-7 7"/><path d="M16 21h5v-5"/><path d="M4 4l7 7"/></svg>`;
+  }
+
+  function iconRepeat() {
+    return `<svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>`;
+  }
+
+  function iconRepeatOne() {
+    return `<svg viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/><path d="M12 8v8"/><path d="M10.5 10.5 12 9l1.5 1.5"/></svg>`;
+  }
+
+  function iconWave() {
+    return `<svg viewBox="0 0 24 24"><path d="M3 12h2l2-5 4 10 3-7 2 2h5"/></svg>`;
+  }
+
+  function iconQueue() {
+    return `<svg viewBox="0 0 24 24"><path d="M4 6h10"/><path d="M4 12h10"/><path d="M4 18h10"/><path d="M18 17l3-2-3-2"/><path d="M18 7l3-2-3-2"/></svg>`;
+  }
+
+  function iconShare() {
+    return `<svg viewBox="0 0 24 24"><path d="M14 10 21 3"/><path d="M21 3h-6"/><path d="M21 3v6"/><path d="M10 14 3 21"/><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/></svg>`;
+  }
+
+  function iconSparkles() {
+    return `<svg viewBox="0 0 24 24"><path d="m12 3 1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3Z"/><path d="m19 15 .8 2 .2.2 2 .8-2 .8-.2.2-.8 2-.8-2-.2-.2-2-.8 2-.8.2-.2.8-2Z"/></svg>`;
+  }
+
+  function iconSettings() {
+    return `<svg viewBox="0 0 24 24"><path d="M12 3v2"/><path d="M12 19v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M3 12h2"/><path d="M19 12h2"/><path d="m4.9 19.1 1.4-1.4"/><path d="m17.7 6.3 1.4-1.4"/><circle cx="12" cy="12" r="4"/></svg>`;
+  }
+
+  function iconChevronDown() {
+    return `<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>`;
+  }
+
+  function iconBack() {
+    return `<svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>`;
+  }
+
+  function iconDownloadSmall() {
+    return `<svg viewBox="0 0 24 24" style="width:18px;height:18px;display:block;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>`;
+  }
+
+  function iconBagPlus() {
+    return `<svg viewBox="0 0 24 24"><path d="M6 8h12l-1 11H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M19.5 14.5h-4"/><path d="M17.5 12.5v4"/></svg>`;
+  }
+
+})();
