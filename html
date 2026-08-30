@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Audiory – Global Beat Marketplace | Buy & Sell Beats Online</title>
+
+  <meta name="description" content="Audiory is a global beat marketplace where producers sell beats and artists buy high-quality instrumentals. Discover trending beats, free beats, sound kits, and top producers worldwide.">
+  <meta name="author" content="Audiory">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://audiory.site/">
+  <meta name="theme-color" content="#0f172a">
+
+  <link rel="icon" href="/audioryfavicon.webp" type="image/webp">
+  <link rel="shortcut icon" href="/audioryfavicon.webp">
+  <link rel="icon" type="image/x-icon" href="/favicon.webp">
+  <link rel="apple-touch-icon" href="/audioryfavicon.webp">
+
+  <meta property="og:title" content="Audiory – Global Beat Marketplace">
+  <meta property="og:description" content="Buy and sell beats worldwide. Discover trending beats, sound kits, and top producers. Your first hit starts here.">
+  <meta property="og:url" content="https://audiory.site/">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://audiory.site/audioryfavicon.webp">
+  <meta property="og:image:alt" content="Audiory – Beat Marketplace">
+  <meta property="og:site_name" content="Audiory">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Audiory – Global Beat Marketplace">
+  <meta name="twitter:description" content="Buy and sell beats worldwide. Discover trending beats, sound kits, and top producers.">
+  <meta name="twitter:image" content="https://audiory.site/audioryfavicon.webp">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Audiory",
+    "alternateName": "Audiory Beat Marketplace",
+    "url": "https://audiory.site/",
+    "logo": "https://audiory.site/audioryfavicon.webp",
+    "sameAs": [
+      "https://www.instagram.com/audiorybeatstore",
+      "https://www.tiktok.com/@audiorybeatstore",
+      "https://x.com/audiorybeats",
+      "https://www.facebook.com/audiorybeatstore",
+      "https://youtube.com/@audiorybeatstore"
+    ]
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Audiory",
+    "alternateName": "Audiory Beat Marketplace",
+    "url": "https://audiory.site/"
+  }
+  </script>
+
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eep2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 flex flex-col min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Global Inline Alert Banner -->
+  <div id="inlineAlert" class="hidden sticky top-0 z-50 bg-indigo-600 text-white px-4 py-3 shadow-lg">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-2 text-sm font-medium">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span id="inlineAlertMessage">Welcome to Audiory!</span>
+      </div>
+      <button onclick="document.getElementById('inlineAlert').classList.add('hidden')" class="p-1 hover:bg-indigo-700 rounded-lg transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 w-full bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button id="hamburgerBtn" aria-label="Menu" class="lg:hidden p-2 text-slate-400 hover:text-white focus:outline-none">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <a href="/" class="text-xl font-black tracking-tight text-white flex items-center gap-2.5">
+          <!-- Custom SVG Logo Matching screenshot 2 -->
+          <span class="bg-indigo-600 text-white p-1.5 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+              <!-- Outer A frame -->
+              <path d="M 50 15 L 20 85 M 50 15 L 80 85" />
+              <!-- Inner upside-down arc/star overlap -->
+              <path d="M 32 60 Q 50 80 68 60" />
+              <!-- Crossbar -->
+              <path d="M 28 50 L 72 50" />
+            </svg>
+          </span>
+          Audiory
+        </a>
+      </div>
+
+      <nav class="hidden lg:flex items-center gap-1 text-sm font-semibold text-slate-300">
+        <a href="/" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Feed</a>
+        <a href="/marketplace/" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Tracks</a>
+        <a href="/freebeats/" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Free Beats</a>
+        <a href="/soundkits/" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Sound Kits</a>
+        <a href="/producers/" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Producers</a>
+        <a href="/pricing/" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Pricing</a>
+        <a href="/premieres/" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Premieres</a>
+        <a href="/collabs/" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Collabs</a>
+
+        <div class="h-4 w-px bg-slate-800 mx-2"></div>
+
+        <a id="navStartSelling" href="/register/" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition-colors">Start Selling</a>
+        <a id="navSignIn" href="/login/" class="px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Sign in</a>
+
+        <a id="navDashboard" href="#" class="hidden px-3 py-2 rounded-lg hover:text-white hover:bg-slate-800 transition-colors">Dashboard</a>
+        <button id="navSignOut" type="button" class="hidden px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">Sign out</button>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <button id="pbCartBtn" type="button" aria-label="Open cart" class="relative p-2 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all flex items-center gap-2 px-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span id="pbCartCount" class="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">0</span>
+        </button>
+
+        <div class="relative">
+          <button id="appsBtn" class="p-2 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition-all">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+          </button>
+
+          <div id="appsDropdown" class="hidden absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl py-2 z-50">
+            <a href="https://help-desk.audiory.site" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              Help Desk
+            </a>
+            <a href="https://blog.audiory.site" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+              Blog
+            </a>
+            <a href="/about/" class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              About
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation Menu -->
+  <div id="menuBackdrop" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50"></div>
+  <nav id="mobileMenu" aria-label="Mobile Menu" class="hidden fixed inset-y-0 left-0 w-72 bg-slate-900 border-r border-slate-800 p-6 z-50 flex flex-col gap-4 overflow-y-auto">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+      <span class="text-lg font-bold text-white">Menu</span>
+      <button id="menuCloseBtn" class="text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <a href="/" class="text-slate-300 hover:text-white font-medium py-1">Feed</a>
+    <a href="/marketplace/" class="text-slate-300 hover:text-white font-medium py-1">Tracks</a>
+    <a href="/freebeats/" class="text-slate-300 hover:text-white font-medium py-1">Free Beats</a>
+    <a href="/soundkits/" class="text-slate-300 hover:text-white font-medium py-1">Sound Kits</a>
+    <a href="/producers/" class="text-slate-300 hover:text-white font-medium py-1">Producers</a>
+    <a href="/pricing/" class="text-slate-300 hover:text-white font-medium py-1">Pricing</a>
+    <a href="/premieres/" class="text-slate-300 hover:text-white font-medium py-1">Premieres</a>
+    <a href="/collabs/" class="text-slate-300 hover:text-white font-medium py-1">Collabs</a>
+
+    <hr class="border-slate-800 my-2" />
+
+    <a id="mNavStartSelling" href="/register/" class="w-full text-center bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors">Start Selling</a>
+    <a id="mNavSignIn" href="/login/" class="w-full text-center border border-slate-700 text-slate-300 hover:text-white font-bold py-3 rounded-xl transition-colors">Sign in</a>
+
+    <a id="mNavDashboard" href="#" class="hidden text-slate-300 hover:text-white font-medium py-1">Dashboard</a>
+    <button id="mNavSignOut" class="hidden text-left text-slate-400 hover:text-white font-medium py-1">Sign out</button>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow space-y-12">
+
+    <!-- Compact Hero Section (Adjusted sizing) -->
+    <section class="relative rounded-2xl bg-slate-900 border border-slate-800 p-6 sm:p-8 lg:p-10 overflow-hidden">
+      <div class="absolute -right-20 -top-20 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl"></div>
+      
+      <div class="relative z-10 max-w-2xl space-y-4">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+          Discover Your Next Hit
+        </h1>
+        <p class="text-sm sm:text-base text-slate-400 leading-normal">
+          Audiory is a global beat marketplace where producers sell beats and artists buy instrumentals, free beats, and sound kits.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-2.5 pt-1">
+          <input id="searchInput" class="flex-grow bg-slate-950/90 border border-slate-700/60 focus:border-indigo-500 text-white px-4 py-3 rounded-xl outline-none placeholder:text-slate-500 text-sm transition-colors" placeholder="Search by artist, mood, genre, tags..." />
+          <button id="searchBtn" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            Search
+          </button>
+        </div>
+
+        <div class="flex flex-wrap gap-3 pt-1">
+          <a href="/marketplace/" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Explore Beats
+          </a>
+          <a href="/register/" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Sell Your Beats
+          </a>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800/80 space-y-1.5">
+          <p class="text-xs text-slate-500 font-medium">Try searching for:</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" data-smart-fill="J. Cole" class="text-[11px] bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 px-2.5 py-1 rounded-lg transition-colors">J. Cole</button>
+            <button type="button" data-smart-fill="Trap" class="text-[11px] bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 px-2.5 py-1 rounded-lg transition-colors">Trap</button>
+            <button type="button" data-smart-fill="Afrobeats" class="text-[11px] bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 px-2.5 py-1 rounded-lg transition-colors">Afrobeats</button>
+            <button type="button" data-smart-fill="Drill dark" class="text-[11px] bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 px-2.5 py-1 rounded-lg transition-colors">Drill dark</button>
+            <button type="button" data-smart-fill="chill lyrical" class="text-[11px] bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 px-2.5 py-1 rounded-lg transition-colors">chill lyrical</button>
+            <button type="button" data-smart-fill="Amapiano club" class="text-[11px] bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-slate-300 px-2.5 py-1 rounded-lg transition-colors">Amapiano club</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Beats -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Featured Beats</h2>
+        <a class="text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors" href="/marketplace/?featured=1">See all →</a>
+      </div>
+      <div id="featuredStatus" class="text-sm text-slate-500">Loading featured beats…</div>
+      <div id="featuredStrip" class="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-800"></div>
+    </section>
+
+    <!-- Trending Beats -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Trending Beats</h2>
+        <a class="text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors" href="/marketplace/">See all →</a>
+      </div>
+      <div id="homeStatus" class="text-sm text-slate-500">Loading beats…</div>
+      <div id="trendingStrip" class="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-800"></div>
+    </section>
+
+    <!-- Popular Genres -->
+    <section class="space-y-4">
+      <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Popular Genres</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <a class="group relative h-28 rounded-2xl overflow-hidden border border-slate-800" href="/marketplace/?genre=Afrobeats">
+          <img class="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-300" src="https://images.pexels.com/photos/164936/pexels-photo-164936.jpeg?auto=compress&cs=tinysrgb&w=200" alt="Afrobeats">
+          <span class="absolute inset-0 flex items-center justify-center text-white font-black tracking-wide text-lg">Afrobeats</span>
+        </a>
+        <a class="group relative h-28 rounded-2xl overflow-hidden border border-slate-800" href="/marketplace/?genre=Trap">
+          <img class="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-300" src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=200&q=60" alt="Trap">
+          <span class="absolute inset-0 flex items-center justify-center text-white font-black tracking-wide text-lg">Trap</span>
+        </a>
+        <a class="group relative h-28 rounded-2xl overflow-hidden border border-slate-800" href="/marketplace/?genre=Drill">
+          <img class="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-300" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=200&q=60" alt="Drill">
+          <span class="absolute inset-0 flex items-center justify-center text-white font-black tracking-wide text-lg">Drill</span>
+        </a>
+        <a class="group relative h-28 rounded-2xl overflow-hidden border border-slate-800" href="/marketplace/?genre=Amapiano">
+          <img class="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-300" src="https://images.unsplash.com/photo-1485579149621-3123dd979885?auto=format&fit=crop&w=200&q=60" alt="Amapiano">
+          <span class="absolute inset-0 flex items-center justify-center text-white font-black tracking-wide text-lg">Amapiano</span>
+        </a>
+        <a class="group relative h-28 rounded-2xl overflow-hidden border border-slate-800" href="/marketplace/?genre=R%26B">
+          <img class="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-300" src="https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=200&q=60" alt="R&B">
+          <span class="absolute inset-0 flex items-center justify-center text-white font-black tracking-wide text-lg">R&B</span>
+        </a>
+        <a class="group relative h-28 rounded-2xl overflow-hidden border border-slate-800" href="/marketplace/?genre=Hip%20Hop">
+          <img class="absolute inset-0 w-full h-full object-cover brightness-50 group-hover:scale-105 transition-transform duration-300" src="https://images.unsplash.com/photo-1499415479124-43c32433a620?auto=format&fit=crop&w=200&q=60" alt="Hip Hop">
+          <span class="absolute inset-0 flex items-center justify-center text-white font-black tracking-wide text-lg">Hip Hop</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Top Charting Beats Grid -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Top Charting Beats</h2>
+        <a class="text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors" href="/marketplace/">See all →</a>
+      </div>
+      <div id="chartGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+    </section>
+
+    <!-- Producers Promo -->
+    <section class="bg-slate-900 border border-slate-800 rounded-3xl p-8 lg:p-12 space-y-6">
+      <div class="space-y-2">
+        <span class="text-xs font-black uppercase tracking-wider text-indigo-400">For Producers</span>
+        <h3 class="text-2xl sm:text-3xl font-extrabold text-white">Your music business in one place</h3>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6 pt-4">
+        <div class="bg-slate-950/50 border border-slate-800/80 p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-xl flex items-center justify-center font-bold">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <h4 class="font-bold text-white text-lg">Manage your business</h4>
+          <p class="text-slate-400 text-sm">Upload your beats, manage your store, and sell licenses in one workflow.</p>
+        </div>
+
+        <div class="bg-slate-950/50 border border-slate-800/80 p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-xl flex items-center justify-center font-bold">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          </div>
+          <h4 class="font-bold text-white text-lg">Track your performance</h4>
+          <p class="text-slate-400 text-sm">See what’s trending and grow with analytics & upgrades.</p>
+        </div>
+
+        <div class="bg-slate-950/50 border border-slate-800/80 p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-xl flex items-center justify-center font-bold">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          </div>
+          <h4 class="font-bold text-white text-lg">Grow your audience</h4>
+          <p class="text-slate-400 text-sm">Build your producer profile and reach more artists.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3 pt-2">
+        <a href="/register/" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-3 rounded-xl transition-colors">Start Selling</a>
+        <a href="/login/" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold px-6 py-3 rounded-xl transition-colors">Sign in</a>
+      </div>
+    </section>
+
+    <!-- Why Buy Section (Updated clean SVG icons) -->
+    <section class="space-y-6">
+      <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Why Buy From Audiory?</h2>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          </div>
+          <h3 class="font-bold text-white">Secure Licensing</h3>
+          <p class="text-slate-400 text-sm">Every beat comes with clear licensing options and instant delivery.</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <h3 class="font-bold text-white">Instant Downloads</h3>
+          <p class="text-slate-400 text-sm">Get your files immediately after purchase or free download.</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 002 2h1.5a2.5 2.5 0 002.5-2.5V11a2 2 0 012-2h1.065M12 21a9 9 0 100-18 9 9 0 000 18z"/></svg>
+          </div>
+          <h3 class="font-bold text-white">Global Producers</h3>
+          <p class="text-slate-400 text-sm">Discover talented producers from around the world.</p>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-3">
+          <div class="w-10 h-10 bg-indigo-600/10 text-indigo-400 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="font-bold text-white">Multiple Payments</h3>
+          <p class="text-slate-400 text-sm">Pay securely using PayPal or M-Pesa.</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="space-y-4">
+      <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Frequently Asked Questions</h2>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 divide-y divide-slate-800 space-y-4">
+        <details class="group pt-4 first:pt-0">
+          <summary class="font-semibold text-white cursor-pointer flex justify-between items-center list-none">
+            <span>How do I buy a beat?</span>
+            <span class="transition group-open:rotate-180">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </span>
+          </summary>
+          <p class="text-slate-400 text-sm mt-3">Select a beat, choose a license, and complete payment.</p>
+        </details>
+        <details class="group pt-4">
+          <summary class="font-semibold text-white cursor-pointer flex justify-between items-center list-none">
+            <span>Do I receive files instantly?</span>
+            <span class="transition group-open:rotate-180">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </span>
+          </summary>
+          <p class="text-slate-400 text-sm mt-3">Yes. Purchased beats are delivered immediately after payment.</p>
+        </details>
+        <details class="group pt-4">
+          <summary class="font-semibold text-white cursor-pointer flex justify-between items-center list-none">
+            <span>Can I download free beats?</span>
+            <span class="transition group-open:rotate-180">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </span>
+          </summary>
+          <p class="text-slate-400 text-sm mt-3">Yes. Producers can enable free downloads on selected beats.</p>
+        </details>
+        <details class="group pt-4">
+          <summary class="font-semibold text-white cursor-pointer flex justify-between items-center list-none">
+            <span>Can producers sell on Audiory?</span>
+            <span class="transition group-open:rotate-180">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </span>
+          </summary>
+          <p class="text-slate-400 text-sm mt-3">Yes. Create an account and start uploading beats.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- Newsletter Banner -->
+    <section class="bg-indigo-600 rounded-3xl p-8 sm:p-12 text-center text-white space-y-6">
+      <div class="max-w-2xl mx-auto space-y-3">
+        <h2 class="text-2xl sm:text-3xl font-black">Don’t Miss a Beat</h2>
+        <p class="text-indigo-100 text-sm sm:text-base">Get new beats, free downloads, producer opportunities and exclusive updates delivered to your inbox.</p>
+      </div>
+      
+      <div class="max-w-xl mx-auto flex flex-col sm:flex-row gap-3">
+        <input id="newsletterName" type="text" placeholder="Your name" class="bg-white/10 placeholder:text-indigo-200 border border-indigo-400/30 px-4 py-3 rounded-xl outline-none text-white text-sm focus:bg-white/20 transition-all flex-1" />
+        <input id="newsletterEmail" type="email" placeholder="Enter your email" class="bg-white/10 placeholder:text-indigo-200 border border-indigo-400/30 px-4 py-3 rounded-xl outline-none text-white text-sm focus:bg-white/20 transition-all flex-1" />
+        <button id="newsletterBtn" class="bg-white text-indigo-700 hover:bg-indigo-50 font-extrabold px-6 py-3 rounded-xl text-sm transition-colors">Subscribe</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer (Wide layout on desktop only) -->
+  <footer class="bg-slate-900 border-t border-slate-800 py-12 mt-auto w-full">
+    <div class="w-full max-w-7xl lg:max-w-none px-4 sm:px-6 lg:px-16 mx-auto flex flex-col items-center gap-6 text-center">
+      <div class="text-xs font-medium text-slate-500">© 2026 Audiory. All Rights Reserved.</div>
+
+      <div class="flex flex-wrap justify-center gap-6 text-xs text-slate-400 font-medium">
+        <a href="/privacy/" class="hover:text-white transition-colors">Privacy Policy</a>
+        <a href="/terms/" class="hover:text-white transition-colors">Terms</a>
+        <a href="/cookies/" class="hover:text-white transition-colors">Cookies</a>
+        <a href="/cookie-settings/" class="hover:text-white transition-colors">Cookie Settings</a>
+        <a href="/refunds/" class="hover:text-white transition-colors">Refund Policy</a>
+        <a href="/dmca/" class="hover:text-white transition-colors">DMCA</a>
+        <a href="/creator-agreement/" class="hover:text-white transition-colors">Creator Agreement</a>
+      </div>
+
+      <div class="flex justify-center items-center gap-3">
+        <a href="https://www.instagram.com/audiorybeatstore" target="_blank" rel="noopener noreferrer" aria-label="Instagram" class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-600 hover:border-indigo-600 transition-all">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@audiorybeatstore" target="_blank" rel="noopener noreferrer" aria-label="TikTok" class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-600 hover:border-indigo-600 transition-all">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.82.56-1.31 1.54-1.28 2.53.02 1.02.61 1.96 1.51 2.39.92.45 2.06.37 2.91-.22.82-.55 1.28-1.52 1.25-2.51.02-5.32.01-10.64.01-15.96z"/></svg>
+        </a>
+        <a href="https://x.com/audiorybeats" target="_blank" rel="noopener noreferrer" aria-label="X" class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-600 hover:border-indigo-600 transition-all">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+        <a href="https://www.facebook.com/audiorybeatstore" target="_blank" rel="noopener noreferrer" aria-label="Facebook" class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-600 hover:border-indigo-600 transition-all">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+        <a href="https://youtube.com/@audiorybeatstore" target="_blank" rel="noopener noreferrer" aria-label="YouTube" class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-slate-400 hover:text-white hover:bg-indigo-600 hover:border-indigo-600 transition-all">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- License Selection Modal -->
+  <div id="pbModalBackdrop" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50"></div>
+  <div id="pbLicenseModal" role="dialog" aria-modal="true" class="hidden fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-50 space-y-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-start justify-between border-b border-slate-800 pb-4">
+      <div>
+        <span class="text-xs font-bold uppercase text-indigo-400 tracking-wider">Choose License</span>
+        <h3 id="pbModalTitle" class="text-xl font-bold text-white">Beat Title</h3>
+        <p id="pbModalSub" class="text-sm text-slate-400">Select a license to continue.</p>
+      </div>
+      <button id="pbModalClose" class="text-slate-400 hover:text-white p-1">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div id="pbLicensesGrid" class="space-y-3"></div>
+
+    <div class="border-t border-slate-800 pt-4 flex items-center justify-between">
+      <div>
+        <div class="text-xs text-slate-500">Total</div>
+        <div id="pbTotalPrice" class="text-2xl font-black text-white">$0.00</div>
+      </div>
+      <div class="flex gap-3">
+        <button id="pbAddToCart" type="button" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold px-4 py-2.5 rounded-xl transition-colors">Add to Cart</button>
+        <button id="pbBuyNow" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl transition-colors">Buy now</button>
+      </div>
+    </div>
+
+    <div id="pbTermsBox" class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-400 space-y-2">
+      <div class="font-bold text-slate-300">Usage Terms</div>
+      <div id="pbTermsGrid" class="grid grid-cols-2 gap-2"></div>
+    </div>
+  </div>
+
+  <!-- Cart Side Drawer -->
+  <div id="pbCartBackdrop" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50"></div>
+  <aside id="pbCartDrawer" aria-label="Cart" class="hidden fixed inset-y-0 right-0 w-full max-w-md bg-slate-900 border-l border-slate-800 p-6 z-50 flex flex-col justify-between shadow-2xl">
+    <div class="space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div>
+          <h3 class="text-xl font-bold text-white">Your Cart</h3>
+          <p id="pbCartSub" class="text-sm text-slate-400">0 items</p>
+        </div>
+        <button id="pbCartClose" type="button" class="text-slate-400 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="pbCartItems" class="space-y-3 overflow-y-auto max-h-[60vh]"></div>
+    </div>
+
+    <div class="border-t border-slate-800 pt-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <span class="text-slate-400 font-medium">Total</span>
+        <span id="pbCartTotal" class="text-2xl font-black text-white">$0.00</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <button id="pbCartClear" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl transition-colors">Clear</button>
+        <button id="pbCartCheckout" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors">Checkout</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Free Download Modal -->
+  <div id="pbFreeBackdrop" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50"></div>
+  <div id="pbFreeModal" role="dialog" aria-modal="true" class="hidden fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-50 space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+      <h3 id="pbFreeTitle" class="text-xl font-bold text-white">Free Download</h3>
+      <button id="pbFreeClose" class="text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <p id="pbFreeSub" class="text-sm text-slate-400">
+      Enter your email address and full name to unlock your free download.
+    </p>
+
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-bold text-slate-300 mb-1">Full name</label>
+        <input id="pbFreeName" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white px-4 py-2.5 rounded-xl outline-none text-sm" placeholder="Your full name">
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-slate-300 mb-1">Email address</label>
+        <input id="pbFreeEmail" type="email" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white px-4 py-2.5 rounded-xl outline-none text-sm" placeholder="you@email.com">
+      </div>
+    </div>
+
+    <button id="pbFreeSend" type="button" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-colors">Send Track</button>
+    <div id="pbFreeStatus" class="text-xs text-emerald-400"></div>
+
+    <p class="text-[11px] text-slate-500 text-center">
+      By continuing, you agree to our Terms & Privacy Policy.
+    </p>
+  </div>
+
+  <!-- Payment Modal -->
+  <div id="pbPayBackdrop" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50"></div>
+  <div id="pbPayModal" role="dialog" aria-modal="true" class="hidden fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-lg mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl z-50 space-y-6">
+    <div class="flex items-start justify-between border-b border-slate-800 pb-4">
+      <div>
+        <h3 id="pbPayTitle" class="text-xl font-bold text-white">Choose payment method</h3>
+        <p id="pbPaySub" class="text-sm text-slate-400">—</p>
+      </div>
+      <button id="pbPayClose" class="text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="space-y-3">
+      <button id="pbPayWithPaypal" type="button" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold p-4 rounded-2xl transition-colors flex items-center justify-between">
+        <span>Pay with PayPal</span>
+        <span id="pbPayAmountA" class="opacity-90">—</span>
+      </button>
+
+      <button id="pbPayWithMpesa" type="button" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-4 rounded-2xl transition-colors flex items-center justify-between">
+        <span>Pay with M-Pesa</span>
+        <span id="pbPayAmountB" class="opacity-90">—</span>
+      </button>
+
+      <div id="pbMpesaBox" class="hidden bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-3 mt-3">
+        <label class="block text-xs font-bold text-slate-300">Phone number (2547XXXXXXXX)</label>
+        <input id="pbMpesaPhone" inputmode="numeric" class="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 text-white px-4 py-2.5 rounded-xl outline-none text-sm" placeholder="2547XXXXXXXX" />
+        <button id="pbSendStkPush" type="button" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition-colors">Send STK Push</button>
+        <div id="pbPayStatus" class="text-xs text-slate-400 whitespace-pre-line"></div>
+      </div>
+    </div>
+  </div>
